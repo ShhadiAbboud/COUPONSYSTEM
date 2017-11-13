@@ -12,6 +12,12 @@ public class Customer {
 	{
 
 	}
+	public Customer(long id, String custName, String password)
+	{
+		this.id = id;
+		this.custName = custName;
+		this.password = password;
+	}
 
 	public Collection<Coupon> getCoupons() {
 		return coupons;
@@ -19,13 +25,6 @@ public class Customer {
 
 	public void setCoupons(Collection<Coupon> coupons) {
 		this.coupons = coupons;
-	}
-
-	public Customer(long id, String custName, String password)
-	{
-		this.id = id;
-		this.custName = custName;
-		this.password = password;
 	}
 
 	public long getId() {
