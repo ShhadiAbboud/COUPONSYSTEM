@@ -1,5 +1,5 @@
 package exceptions;
 
-public class WrongDataInputException {
+public class WrongDataInputException extends Exception{
 
 }

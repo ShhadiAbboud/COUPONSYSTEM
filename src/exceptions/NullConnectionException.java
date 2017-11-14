@@ -1,5 +1,5 @@
 package exceptions;
 
-public class NullConnectionException {
+public class NullConnectionException extends Exception {
 
 }

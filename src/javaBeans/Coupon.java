@@ -8,7 +8,7 @@ public class Coupon {
     private Date startDate;
 	private Date endDate;
 	private int amount;
-	private CouponType coupontype;
+	private CouponType type;
 	private String message;
 	private double price;
 	private String image;
@@ -27,7 +27,7 @@ public class Coupon {
 		this.startDate = startDate;
 		this.endDate = endDate;
 		this.amount = amount;
-		this.coupontype = coupontype;
+		this.type = coupontype;
 		this.message = message;
 		this.price = price;
 		this.image = image;
@@ -61,7 +61,7 @@ public class Coupon {
 	}
 
 
-	public java.util.Date getStartDate() {
+	public Date getStartDate() {
 		return startDate;
 	}
 
@@ -71,7 +71,7 @@ public class Coupon {
 	}
 
 
-	public java.util.Date getEndDate() {
+	public Date getEndDate() {
 		return endDate;
 	}
 
@@ -92,12 +92,12 @@ public class Coupon {
 
 
 	public CouponType getCoupontype() {
-		return coupontype;
+		return type;
 	}
 
 
-	public void setCoupontype(CouponType coupontype) {
-		this.coupontype = coupontype;
+	public void setType(CouponType coupontype) {
+		this.type = coupontype;
 	}
 
 
