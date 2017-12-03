@@ -6,12 +6,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
+import java.util.Date;
 
 import com.mysql.jdbc.Statement;
 
+import exceptions.DuplicateCouponTypeException;
 import exceptions.DuplicateEntryException;
 import exceptions.NullConnectionException;
+import exceptions.UnAvailableCouponException;
 import exceptions.WrongDataInputException;
 import javaBeans.Coupon;
 import javaBeans.CouponType;
@@ -22,18 +26,35 @@ import utilities.CouponSqlQuerys;
 import utilities.CustomerSqlQuerys;
 import utilities.DateTranslate;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class CustomerDBDAO.
+ */
 public class CustomerDBDAO implements CustomerDAO{
 	
+	/** The all customers. */
 	ArrayList<Customer> allCustomers = new ArrayList<>();
+	
+	/** The all coupons. */
 	ArrayList<Coupon> allCoupons = new ArrayList<>();
+	
+	/** The user customer id. */
 	private long userCustomerId;
+	
+	/** The pool. */
 	private ConnectionPool pool;
 	
+	/**
+	 * Instantiates a new customer DBDAO.
+	 */
 	public CustomerDBDAO()
 	{
 		pool = ConnectionPool.getInstance();
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CustomerDAO#createCustomer(javaBeans.Customer)
+	 */
 	@Override
 	public void createCustomer(Customer customer) throws ClassNotFoundException, InterruptedException, SQLException,
 			DuplicateEntryException, NullConnectionException {
@@ -65,6 +86,9 @@ public class CustomerDBDAO implements CustomerDAO{
 		
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CustomerDAO#removeCustomer(javaBeans.Customer)
+	 */
 	@Override
 	public void removeCustomer(Customer customer)
 			throws ClassNotFoundException, InterruptedException, SQLException, NullConnectionException {
@@ -91,6 +115,9 @@ public class CustomerDBDAO implements CustomerDAO{
 		
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CustomerDAO#updateCustomer(javaBeans.Customer)
+	 */
 	@Override
 	public void updateCustomer(Customer customer)
 			throws ClassNotFoundException, InterruptedException, SQLException, NullConnectionException {
@@ -119,6 +146,9 @@ public class CustomerDBDAO implements CustomerDAO{
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CustomerDAO#getCustomer(long)
+	 */
 	@Override
 	public Customer getCustomer(long id)
 			throws ClassNotFoundException, InterruptedException, SQLException, NullConnectionException {
@@ -145,6 +175,9 @@ public class CustomerDBDAO implements CustomerDAO{
 		return customer;
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CustomerDAO#getAllCustomer()
+	 */
 	@Override
 	public Collection<Customer> getAllCustomer()
 			throws ClassNotFoundException, InterruptedException, SQLException, NullConnectionException {
@@ -177,6 +210,9 @@ public class CustomerDBDAO implements CustomerDAO{
 		return allCustomers;
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CustomerDAO#getCoupons()
+	 */
 	@Override
 	public Collection<Coupon> getCoupons()
 			throws ClassNotFoundException, InterruptedException, SQLException, ParseException, NullConnectionException {
@@ -185,6 +221,9 @@ public class CustomerDBDAO implements CustomerDAO{
 		
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CustomerDAO#login(java.lang.String, java.lang.String)
+	 */
 	@Override
 	public boolean login(String custName, String password) throws ClassNotFoundException, InterruptedException,
 			SQLException, WrongDataInputException, NullConnectionException {
@@ -213,15 +252,30 @@ public class CustomerDBDAO implements CustomerDAO{
 
 	
 	}
+	
+	/**
+	 * Gets the user customer id.
+	 *
+	 * @return the user customer id
+	 */
 	public long getUserCustomerId()
 	{
 		return userCustomerId;
 	}
+	
+	/**
+	 * Sets the user customer id.
+	 *
+	 * @param userCustomerId the new user customer id
+	 */
 	public void setUserCustomerId(long userCustomerId)
 	{
 		this.userCustomerId = userCustomerId;
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CustomerDAO#getCouponsByCustomerId(long)
+	 */
 	@Override
 	public Collection<Coupon> getCouponsByCustomerId(long id) throws SQLException {
 		ArrayList<Coupon> SCouponsArray = new ArrayList<>();
@@ -267,6 +321,249 @@ public class CustomerDBDAO implements CustomerDAO{
 	
 		}
 		return SCouponsArray;
+	}
+	
+	/**
+	 * Gets the all purchased coupons by type.
+	 *
+	 * @param coupontype the coupontype
+	 * @return the all purchased coupons by type
+	 * @throws ClassNotFoundException the class not found exception
+	 * @throws InterruptedException the interrupted exception
+	 * @throws SQLException the SQL exception
+	 * @throws ParseException the parse exception
+	 * @throws NullConnectionException the null connection exception
+	 */
+	public ArrayList<Coupon> getAllPurchasedCouponsByType(CouponType coupontype) throws ClassNotFoundException, InterruptedException, SQLException, ParseException, NullConnectionException
+	{
+		//initializing the method variables
+		ArrayList<Long> couponId = new ArrayList<>();
+		allCoupons.removeAll(allCoupons);
+		//Establishing the connection to the data base
+		Connection con = (Connection) ConnectionPool.getInstance().getConnection();
+
+		Statement stmt = (Statement) con.createStatement();
+		ResultSet rs;
+		//a mysql statement that adds all of the purchased coupons id
+		rs = stmt.executeQuery(String.format(CouponSqlQuerys.COUPON_ID_BY_CUST_ID, this.getUserCustomerId() ));
+		while (rs.next())
+		{
+			couponId.add(rs.getLong("coupon_id"));
+		}
+		//a for loop with a mysql statement that adds all of the purchased coupons with the input couponType to an ArrayList
+		for (int i=0;i<couponId.size();i++)
+		{
+			ResultSet newrs;	
+			Statement stmtN = (Statement) con.createStatement();
+			newrs = stmtN.executeQuery(String.format(CouponSqlQuerys.ALL_COUPONS_BY_ID_AND_TYPE, couponId.get(i), coupontype.toString() ));
+			if (newrs.next())
+			{
+				Coupon coupon = new Coupon();
+				coupon.setId(newrs.getLong("id"));
+				coupon.setTitle(newrs.getString("title"));
+				coupon.setStartDate(DateTranslate.stringToDate(newrs.getString("start_date")));
+				coupon.setEndDate(DateTranslate.stringToDate(newrs.getString("end_date")));
+				coupon.setAmount(newrs.getInt("amount"));
+				coupon.setType(CouponType.valueOf(newrs.getString("type").trim()));
+				coupon.setMessage(newrs.getString("message"));
+				coupon.setPrice(newrs.getDouble("price"));
+				coupon.setImage(newrs.getString("image"));
+				allCoupons.add(coupon);
+
+			}
+		}
+		//returning the connection
+		ConnectionPool.getInstance().returnConnection(con);
+
+		return allCoupons;
+	}
+	
+	/**
+	 * Gets the all purchased coupons by price.
+	 *
+	 * @param price the price
+	 * @return the all purchased coupons by price
+	 * @throws ClassNotFoundException the class not found exception
+	 * @throws InterruptedException the interrupted exception
+	 * @throws SQLException the SQL exception
+	 * @throws ParseException the parse exception
+	 * @throws NullConnectionException the null connection exception
+	 */
+	public ArrayList<Coupon> getAllPurchasedCouponsByPrice(double price) throws ClassNotFoundException, InterruptedException, SQLException, ParseException, NullConnectionException
+	{
+		//initializing the method variables
+		ArrayList<Long> couponId = new ArrayList<>();
+		allCoupons.removeAll(allCoupons);	
+		//Establishing the connection to the data base
+		Connection con = (Connection) ConnectionPool.getInstance().getConnection();
+
+		Statement stmt = (Statement) con.createStatement();
+		ResultSet rs;
+		//a mysql statement that adds all of the purchased coupons id
+		rs = stmt.executeQuery(String.format(CouponSqlQuerys.COUPON_ID_BY_CUST_ID, this.getUserCustomerId() ));
+		while (rs.next())
+		{
+			couponId.add(rs.getLong("coupon_id"));					
+		} 
+		//a for loop with a mysql statement that adds all of the purchased coupons with a price that is lower or equal to the input price to an ArrayList
+		for (int i=0;i<couponId.size();i++)
+		{
+			ResultSet newrs;					
+			newrs = stmt.executeQuery(String.format(CouponSqlQuerys.ALL_COUPONS_BY_ID_AND_PRICE, couponId.get(i), price ));
+			while (newrs.next())
+			{
+				Coupon coupon = new Coupon();
+				coupon.setId(newrs.getLong("id"));
+				coupon.setTitle(newrs.getString("title"));
+				coupon.setStartDate(DateTranslate.stringToDate(newrs.getString("start_date")));
+				coupon.setEndDate(DateTranslate.stringToDate(newrs.getString("end_date")));
+				coupon.setAmount(newrs.getInt("amount"));
+				coupon.setType(CouponType.valueOf(newrs.getString("type").trim()));
+				coupon.setMessage(newrs.getString("message"));
+				coupon.setPrice(newrs.getDouble("price"));
+				coupon.setImage(newrs.getString("image"));       
+				allCoupons.add(coupon);
+
+			}
+		}
+		//returning the connection
+		ConnectionPool.getInstance().returnConnection(con);
+
+		return allCoupons;
+
+	}
+	
+	
+	/**
+	 * Purchase coupon.
+	 *
+	 * @param coupon the coupon
+	 * @throws ClassNotFoundException the class not found exception
+	 * @throws InterruptedException the interrupted exception
+	 * @throws SQLException the SQL exception
+	 * @throws ParseException the parse exception
+	 * @throws DuplicateCouponTypeException the duplicate coupon type exception
+	 * @throws UnAvailableCouponException the un available coupon exception
+	 * @throws NullConnectionException the null connection exception
+	 */
+	public void purchaseCoupon(Coupon coupon) throws ClassNotFoundException, InterruptedException, SQLException, ParseException, DuplicateCouponTypeException, UnAvailableCouponException, NullConnectionException
+	{
+		boolean canPurchase = false;
+		canPurchase = this.validCoupon(coupon);
+		canPurchase = this.validateCouponType(coupon);
+		Connection con = (Connection) ConnectionPool.getInstance().getConnection();
+
+		if (canPurchase==true)
+		{
+			//sql statement that updates the available amount of the coupon
+			String updateQuery = CouponSqlQuerys.UPDATE_COUPON_AMOUNT;		
+			PreparedStatement updateStmt = (PreparedStatement) con.prepareStatement(updateQuery);
+			updateStmt.setInt   (1, (coupon.getAmount()-1));
+			updateStmt.setLong  (2, coupon.getId());
+			updateStmt.executeUpdate();
+			// sql statement that adds the purchased coupon's id and the customer's id to the customer-coupon table
+			String query = CustomerSqlQuerys.INSERT_CUSTOMER_COUPON;	  
+			PreparedStatement preparedStmt = (PreparedStatement) con.prepareStatement(query);
+			preparedStmt.setLong (1, this.getUserCustomerId());
+			preparedStmt.setLong (2, coupon.getId());
+			// execute the preparedstatement
+			preparedStmt.execute();     
+			//returning the connection
+			ConnectionPool.getInstance().returnConnection(con);
+			System.out.println("coupon has been purchased");
+		}
+		else
+		{
+			System.out.println("cannot purchase coupon " + coupon.getTitle());
+		}
+	}
+	
+	/**
+	 * Valid coupon.
+	 *
+	 * @param coupon the coupon
+	 * @return true, if successful
+	 * @throws SQLException the SQL exception
+	 * @throws ParseException the parse exception
+	 * @throws UnAvailableCouponException the un available coupon exception
+	 * @throws NullConnectionException the null connection exception
+	 */
+	public boolean validCoupon(Coupon coupon) throws SQLException, ParseException, UnAvailableCouponException, NullConnectionException 
+	{
+		Connection con = (Connection) ConnectionPool.getInstance().getConnection();
+		Date today = Calendar.getInstance().getTime();
+		Date validDate = null;
+		int availableAmount = 0;
+
+		Statement stmt = (Statement) con.createStatement();		
+		//sql statement that checks if the coupon been purchased is actually available for purchasing
+		ResultSet checkAvailability;
+		checkAvailability = stmt.executeQuery(String.format(CustomerSqlQuerys.AMOUNT_AND_END_DATE_BY_ID, coupon.getId() ));
+		if (checkAvailability.next())
+		{
+			availableAmount = checkAvailability.getInt("amount");
+			validDate = (Date) DateTranslate.stringToDate(checkAvailability.getString("end_date"));
+		}
+
+		if( availableAmount>0 && today.before(validDate) )
+		{
+			ConnectionPool.getInstance().returnConnection(con);
+			return true;
+		}
+		else
+		{
+			ConnectionPool.getInstance().returnConnection(con);
+			throw new UnAvailableCouponException("customer " + this.getUserCustomerId() + " tried to purchse a coupon that is"
+					+ " either out of date or it's available amount is 0");
+		}
+	}
+	
+	/**
+	 * Validate coupon type.
+	 *
+	 * @param coupon the coupon
+	 * @return true, if successful
+	 * @throws SQLException the SQL exception
+	 * @throws DuplicateCouponTypeException the duplicate coupon type exception
+	 * @throws NullConnectionException the null connection exception
+	 */
+	public boolean validateCouponType(Coupon coupon) throws SQLException, DuplicateCouponTypeException, NullConnectionException
+	{
+		ArrayList<Long> couponId = new ArrayList<>();
+		ArrayList<CouponType> coupontype = new ArrayList<>();
+		Connection con = (Connection) ConnectionPool.getInstance().getConnection();
+
+		//sql statement that gather all of the current customer's coupons's id
+		ResultSet rs;
+		Statement stmtP = (Statement) con.createStatement();
+		rs = stmtP.executeQuery(String.format(CouponSqlQuerys.COUPON_ID_BY_CUST_ID, this.getUserCustomerId() ));
+		while (rs.next())
+		{
+			couponId.add(rs.getLong("coupon_id"));					
+		}
+		for (int i=0;i<couponId.size();i++)
+		{
+			ResultSet newrs;
+			Statement stmtN = (Statement) con.createStatement();
+			newrs = stmtN.executeQuery(String.format(CouponSqlQuerys.TYPE_BY_ID, couponId.get(i) ));
+			while (newrs.next())
+			{
+				coupontype.add(CouponType.valueOf((newrs.getString("type").trim())));
+			}
+		}
+		//a for loop that checks if the current customer already has a coupon of the same type as the one he is trying to buy
+		for (int i=0;i<coupontype.size();i++)
+		{
+			if(coupontype.get(i)==coupon.getCoupontype())
+			{
+				ConnectionPool.getInstance().returnConnection(con);
+				throw new DuplicateCouponTypeException("customer " + this.getUserCustomerId() + " tried to purchse a coupon of a type that he already has");
+			}
+		}
+		ConnectionPool.getInstance().returnConnection(con);
+		
+		return true;
+
 	}
 
 }

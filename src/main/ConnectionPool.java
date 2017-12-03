@@ -4,20 +4,45 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class ConnectionPool.
+ */
 public class ConnectionPool {
 	
+	/** The instance. */
 	private static ConnectionPool instance = null;
+	
+	/** The driver. */
 	private String driver = "com.mysql.jdbc.Driver";
+	
+	/** The url. */
 	private String url = "jdbc:mysql://localhost:3306/johnbryceproject?useSSL=false";
+	
+	/** The username. */
 	private String username = "root";
+	
+	/** The password. */
 	private String password = "3sh7adi1";
 
+	/** The key. */
 	public  Object key = new Object();
+	
+	/** The max con. */
 	private int MAX_CON=5;
+	
+	/** The connections. */
 	private Set<Connection> connections = new HashSet<Connection>();
+	
+	/** The is shutting down. */
 	private boolean isShuttingDown = false;
 
 
+	/**
+	 * Gets the single instance of ConnectionPool.
+	 *
+	 * @return single instance of ConnectionPool
+	 */
 	//-------------------------------------------------getinstance method-----------------------------------------------------
 	public  static ConnectionPool getInstance() 
 	{
@@ -29,12 +54,18 @@ public class ConnectionPool {
 	}
 
 	//ConnectionPool Constructor , initializing the HashSet with 5 Connections
+	/**
+	 * Instantiates a new connection pool.
+	 */
 	//-------------------------------------------------ConnectionPool method-----------------------------------------------------
 	private ConnectionPool() 
 	{
 		initConnectionPool();
 	}
 
+	/**
+	 * Inits the connection pool.
+	 */
 	private synchronized void initConnectionPool() 
 	{
 		try 
@@ -63,6 +94,11 @@ public class ConnectionPool {
 		}	
 	}
 
+	/**
+	 * Gets the connection.
+	 *
+	 * @return the connection
+	 */
 	//-------------------------------------------------getConnection method-----------------------------------------------------
 	public synchronized Connection getConnection()  
 	{
@@ -99,16 +135,26 @@ public class ConnectionPool {
 		}
 	}
 
+	/**
+	 * Return connection.
+	 *
+	 * @param conn the conn
+	 */
 	//-------------------------------------------------returnConnection method-------------------------------------------------
 	public void returnConnection(Connection conn)
 	{
-		connections.add(conn);
 		synchronized (key) 
 		{
+			connections.add(conn);
 			key.notifyAll();
 		}
 	}
 
+	/**
+	 * Close all connections.
+	 *
+	 * @throws SQLException the SQL exception
+	 */
 	//-------------------------------------------------closeAllConnections method---------------------------------------------
 	public void closeAllConnections() throws SQLException 
 	{
@@ -136,5 +182,13 @@ public class ConnectionPool {
 			Connection conn = iteratorr.next();
 			conn.close();
 		}
+	}
+
+	/**
+	 * Shutting down.
+	 */
+	public void shuttingDown() 
+	{
+		isShuttingDown = true;
 	}
 }

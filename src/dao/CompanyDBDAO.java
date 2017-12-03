@@ -1,13 +1,14 @@
 package dao;
 
 import java.sql.Connection;
+import java.util.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
-import com.mysql.jdbc.Statement;
+import java.sql.Statement;
 import exceptions.DuplicateEntryException;
 import exceptions.NullConnectionException;
 import exceptions.WrongDataInputException;
@@ -19,41 +20,70 @@ import utilities.CompanySqlQuerys;
 import utilities.CouponSqlQuerys;
 import utilities.DateTranslate;
 
+// TODO: Auto-generated Javadoc
+/**
+ * The Class CompanyDBDAO.
+ */
 public class CompanyDBDAO implements CompanyDAO 
 {
+	
+	/** The pool. */
 	private ConnectionPool pool;
+	
+	/** The id. */
 	private long id ;
+	
+	/** The all companys. */
 	ArrayList<Company> allCompanys = new ArrayList<>();
+	
+	/** The all coupons. */
 	ArrayList<Coupon> allCoupons = new ArrayList<>();
 	
 	
 
+	/**
+	 * Gets the id.
+	 *
+	 * @return the id
+	 */
 	public long getId() {
 		return id;
 	}
 
+	/**
+	 * Sets the id.
+	 *
+	 * @param id the new id
+	 */
 	public void setId(long id) {
 		this.id = id;
 	}
 
+	/**
+	 * Instantiates a new company DBDAO.
+	 */
 	public CompanyDBDAO()
 	{
 		pool = ConnectionPool.getInstance();
 		
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CompanyDAO#createCompany(javaBeans.Company)
+	 */
 	@Override
 	public void createCompany(Company company) throws ClassNotFoundException, InterruptedException, SQLException,
-			DuplicateEntryException, NullConnectionException {
+			DuplicateEntryException, NullConnectionException 
+	{
 		//establishing the connection to the data base
-		Connection con =pool.getConnection();
+		Connection con = pool.getConnection();
 
-		Statement testStmt = (Statement) con.createStatement();
+		Statement testStmt = con.createStatement();
 		ResultSet testRs;
 		//the mysql statement to check if there is a company by that name in my database
 		testRs = testStmt.executeQuery(String.format(CompanySqlQuerys.SELECT_ALL_COMP_NAME, company.getCompName()));
-		boolean res = testRs.next();
-		if (res)
+		
+		if (testRs.next())
 		{
 			throw new DuplicateEntryException();
 		}
@@ -62,10 +92,10 @@ public class CompanyDBDAO implements CompanyDAO
 			// the mysql insert statement
 			String query = CompanySqlQuerys.INSERT_COMPANY;
 			// create the mysql insert preparedstatement
-			PreparedStatement preparedStmt = (PreparedStatement) con.prepareStatement(query);
+			PreparedStatement preparedStmt =  con.prepareStatement(query);
 			preparedStmt.setString (1, company.getCompName());
 			preparedStmt.setString (2, company.getPassword());
-			preparedStmt.setString (3, company.getEmail());	       
+			preparedStmt.setString (3, company.getEmail());	 
 			// execute the preparedstatement
 			preparedStmt.execute();
 			System.out.println("company " + company.getCompName() + " has been added to the database");
@@ -76,6 +106,9 @@ public class CompanyDBDAO implements CompanyDAO
 		
 	
 
+	/* (non-Javadoc)
+	 * @see dao.CompanyDAO#removeComapny(javaBeans.Company)
+	 */
 	@Override
 	public void removeComapny(Company company)
 			throws ClassNotFoundException, InterruptedException, SQLException, NullConnectionException {
@@ -116,6 +149,9 @@ public class CompanyDBDAO implements CompanyDAO
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CompanyDAO#updateCompany(javaBeans.Company)
+	 */
 	@Override
 	public void updateCompany(Company company)
 			throws ClassNotFoundException, InterruptedException, SQLException, NullConnectionException {
@@ -147,6 +183,9 @@ public class CompanyDBDAO implements CompanyDAO
 		}
 	
 
+	/* (non-Javadoc)
+	 * @see dao.CompanyDAO#getCompany(long)
+	 */
 	@Override
 	public Company getCompany(long id)
 			throws ClassNotFoundException, InterruptedException, SQLException, NullConnectionException, ParseException {
@@ -176,6 +215,9 @@ public class CompanyDBDAO implements CompanyDAO
 		
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CompanyDAO#getAllCompanys()
+	 */
 	@Override
 	public Collection<Company> getAllCompanys()
 			throws ClassNotFoundException, InterruptedException, SQLException, NullConnectionException, ParseException {
@@ -210,6 +252,9 @@ public class CompanyDBDAO implements CompanyDAO
 		return allCompanys;
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CompanyDAO#getCoupons()
+	 */
 	@Override
 	public Collection<Coupon> getCoupons()
 			throws ClassNotFoundException, InterruptedException, SQLException, ParseException, NullConnectionException {
@@ -258,6 +303,9 @@ public class CompanyDBDAO implements CompanyDAO
 		return allCoupons;  
 	}
 
+	/* (non-Javadoc)
+	 * @see dao.CompanyDAO#login(java.lang.String, java.lang.String)
+	 */
 	@Override
 	public boolean login(String compName, String password) throws ClassNotFoundException, InterruptedException,
 			SQLException, WrongDataInputException, NullConnectionException {
@@ -286,6 +334,10 @@ public class CompanyDBDAO implements CompanyDAO
 		}
 		
 	}
+	
+	/* (non-Javadoc)
+	 * @see dao.CompanyDAO#getCouponsByCompanyId(long)
+	 */
 	@Override
 	public Collection<Coupon> getCouponsByCompanyId(long id) throws SQLException
 	{
@@ -332,5 +384,181 @@ public class CompanyDBDAO implements CompanyDAO
 	
 		}
 		return SCouponsArray;
+	}
+	
+	/**
+	 * Gets the company coupon by type.
+	 *
+	 * @param couponType the coupon type
+	 * @return the company coupon by type
+	 * @throws ClassNotFoundException the class not found exception
+	 * @throws InterruptedException the interrupted exception
+	 * @throws SQLException the SQL exception
+	 * @throws ParseException the parse exception
+	 * @throws NullConnectionException the null connection exception
+	 */
+	public Collection<Coupon> getCompanyCouponByType(CouponType couponType) throws ClassNotFoundException, InterruptedException, SQLException, ParseException, NullConnectionException
+	{
+		//initializing the return variables
+		allCoupons.removeAll(allCoupons);
+		ArrayList<Long> couponId = new ArrayList<>(); 
+		//establishing the connection to the data base
+		Connection con = (Connection) ConnectionPool.getInstance().getConnection();
+
+		Statement stmt = (Statement) con.createStatement();
+		ResultSet rs;      
+		// the mysql select statement for all of the company's coupons id 
+		rs = stmt.executeQuery(String.format(CouponSqlQuerys.COUPON_ID_BY_COMP_ID, this.id));    
+		while(rs.next())
+		{
+			couponId.add(rs.getLong("coupon_id"));
+		}
+		//a for loop that adds all of the coupons that the company has created
+		for (int i=0;i<couponId.size();i++)
+		{
+			Statement stmt1 = (Statement) con.createStatement();
+			ResultSet addRs;      
+			// the mysql select statement for the correct coupons
+			addRs = stmt1.executeQuery(String.format(CouponSqlQuerys.ALL_COUPONS_BY_ID_AND_TYPE, couponId.get(i), couponType.toString()));     		        
+			//adding the data from the sql table to the correct members in the coupon instance
+			while ( addRs.next() )
+			{
+				Coupon coupon = new Coupon();
+				coupon.setId(addRs.getLong("id"));
+				coupon.setTitle(addRs.getString("title"));
+				coupon.setStartDate(DateTranslate.stringToDate(addRs.getString("start_date")));
+				coupon.setEndDate(DateTranslate.stringToDate(addRs.getString("end_date")));
+				coupon.setAmount(addRs.getInt("amount"));
+				coupon.setType(CouponType.valueOf((addRs.getString("type").trim())));
+				coupon.setMessage(addRs.getString("message"));
+				coupon.setPrice(addRs.getDouble("price"));
+				coupon.setImage(addRs.getString("image"));            
+				//adding all the coupons to the ArrayList
+				allCoupons.add(coupon);
+			}
+		}
+		//returning the connection
+		ConnectionPool.getInstance().returnConnection(con);
+
+		return allCoupons;
+
+	}
+	
+	/**
+	 * Gets the company coupon by price.
+	 *
+	 * @param price the price
+	 * @return the company coupon by price
+	 * @throws ClassNotFoundException the class not found exception
+	 * @throws InterruptedException the interrupted exception
+	 * @throws SQLException the SQL exception
+	 * @throws ParseException the parse exception
+	 * @throws NullConnectionException the null connection exception
+	 */
+	public Collection<Coupon> getCompanyCouponByPrice(double price) throws ClassNotFoundException, InterruptedException, SQLException, ParseException, NullConnectionException
+	{
+		//initializing the return variables
+		allCoupons.removeAll(allCoupons);
+		ArrayList<Long> couponId = new ArrayList<>();
+		//establishing the connection to the data base
+		Connection con = (Connection) ConnectionPool.getInstance().getConnection();
+
+		Statement stmt = (Statement) con.createStatement();
+		ResultSet rs;      
+		// the mysql select statement for all of the company's coupons id 
+		rs = stmt.executeQuery(String.format(CouponSqlQuerys.COUPON_ID_BY_COMP_ID, this.id));       
+		while(rs.next())
+		{
+			couponId.add(rs.getLong("coupon_id"));
+
+		}
+		//a for loop that adds all of the coupons that the company has created
+		for (int i=0;i<couponId.size();i++)
+		{
+			Statement stmt1 = (Statement) con.createStatement();
+			ResultSet addRs; 
+			// the mysql select statement for the correct coupons
+			addRs = stmt1.executeQuery(String.format(CouponSqlQuerys.ALL_COUPONS_BY_ID_AND_PRICE, couponId.get(i), price ));        
+			//adding the data from the sql table to the correct members in the coupon instance
+			while ( addRs.next() )
+			{
+				Coupon coupon = new Coupon();
+				coupon.setId(addRs.getLong("id"));
+				coupon.setTitle(addRs.getString("title"));
+				coupon.setStartDate(DateTranslate.stringToDate(addRs.getString("start_date")));
+				coupon.setEndDate(DateTranslate.stringToDate(addRs.getString("end_date")));
+				coupon.setAmount(addRs.getInt("amount"));
+				coupon.setType(CouponType.valueOf((addRs.getString("type").trim())));
+				coupon.setMessage(addRs.getString("message"));
+				coupon.setPrice(addRs.getDouble("price"));
+				coupon.setImage(addRs.getString("image"));            
+				//addind all the coupons to the ArrayList
+				allCoupons.add(coupon);
+			}
+		}
+		//returning the connection
+		ConnectionPool.getInstance().returnConnection(con);
+
+		return allCoupons;
+	}
+	
+	/**
+	 * Gets the company coupon by date.
+	 *
+	 * @param date the date
+	 * @return the company coupon by date
+	 * @throws ClassNotFoundException the class not found exception
+	 * @throws InterruptedException the interrupted exception
+	 * @throws SQLException the SQL exception
+	 * @throws ParseException the parse exception
+	 * @throws NullConnectionException the null connection exception
+	 */
+	public Collection<Coupon> getCompanyCouponByDate(Date date) throws ClassNotFoundException, InterruptedException, SQLException, ParseException, NullConnectionException
+	{
+		//initializing the return variables
+		allCoupons.removeAll(allCoupons);
+		ArrayList<Long> couponId = new ArrayList<>();
+		//establishing the connection to the data base
+		Connection con = (Connection) ConnectionPool.getInstance().getConnection();
+
+		Statement stmt = (Statement) con.createStatement();
+		ResultSet rs;      
+		// the mysql select statement for all of the company's coupons id 
+		rs = stmt.executeQuery(String.format(CouponSqlQuerys.COUPON_ID_BY_COMP_ID, this.getId()));      
+		while(rs.next())
+		{
+			couponId.add(rs.getLong("coupon_id"));
+		}
+		//a for loop that adds all of the coupons that the company has created
+		for (int i=0;i<couponId.size();i++)
+		{
+			Statement stmt1 = (Statement) con.createStatement();
+			ResultSet addRs;      
+			// the mysql select statement for the correct coupon
+			addRs = stmt1.executeQuery(String.format(CouponSqlQuerys.ALL_COUPONS_BY_ID, couponId.get(i)));
+			//adding the data from the sql table to the correct members in the coupon instance
+			while ( addRs.next() )
+			{
+				if (DateTranslate.stringToDate(addRs.getString("end_date")).before(date))
+				{
+					Coupon coupon = new Coupon();
+					coupon.setId(addRs.getLong("id"));
+					coupon.setTitle(addRs.getString("title"));
+					coupon.setStartDate(DateTranslate.stringToDate(addRs.getString("start_date")));
+					coupon.setEndDate(DateTranslate.stringToDate(addRs.getString("end_date")));
+					coupon.setAmount(addRs.getInt("amount"));
+					coupon.setType(CouponType.valueOf((addRs.getString("type").trim())));
+					coupon.setMessage(addRs.getString("message"));
+					coupon.setPrice(addRs.getDouble("price"));
+					coupon.setImage(addRs.getString("image"));        
+					//addind all the coupons to the ArrayList
+					allCoupons.add(coupon);
+				}
+			}
+		}
+		//returning the connection
+		ConnectionPool.getInstance().returnConnection(con);
+
+		return allCoupons;
 	}
 }
